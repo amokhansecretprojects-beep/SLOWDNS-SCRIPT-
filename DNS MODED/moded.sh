@@ -722,8 +722,8 @@ EOF
     echo -e "${GREEN}${BOLD}║${NC}    ${WHITE}🔧 Ready for DNS tunneling${NC}                         ${GREEN}${BOLD}║${NC}"
     echo -e "${GREEN}${BOLD}╚══════════════════════════════════════════════════════════╝${NC}"
     
-    echo -e "\n${YELLOW}${BOLD}📞 Need help? Contact support: @esimfreegb${NC}"
-    echo -e "${YELLOW}${BOLD}💡 Documentation: https://github.com/chiddy80/Halotel-Slow-DNS${NC}"
+    echo -e "\n${YELLOW}${BOLD}📞 Need help? Contact support: @.inc🦜 0689000656{NC}"
+    echo -e "${YELLOW}${BOLD}💡 Documentation: WE ARE VENOM🦜${NC}"
     
     echo -e "\n${WHITE}${BOLD}Press Enter to return to terminal...${NC}"
     read -r
@@ -813,3 +813,4 @@ else
     exit 1
 
 fi
+
