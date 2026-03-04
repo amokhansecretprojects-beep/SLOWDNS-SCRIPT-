@@ -219,90 +219,6 @@ echo -e "\r  ${GREEN}Dependencies installed successfully${NC}"
 print_step_end
 
 # ============================================
-# DOWNLOAD DNSTT BINARY
-# ============================================
-print_step "6 - DOWNLOADING DNSTT"
-print_info "Fetching DNSTT binary..."
-
-mkdir -p /usr/local/bin /etc/dnstt
-
-echo -ne "  ${CYAN}Downloading binary...${NC}"
-if [ "$ARCH" = "amd64" ]; then
-    curl -L "https://raw.githubusercontent.com/amokhansecretprojects-beep/SLOWDNS-SCRIPT-/main/DNS%20MODED" -o /tmp/kcptun.tar.gz 2>/dev/null &
-else
-    curl -L "https://raw.githubusercontent.com/amokhansecretprojects-beep/SLOWDNS-SCRIPT-/main/DNS%20MODED" -o /tmp/kcptun.tar.gz 2>/dev/null &
-fi
-show_progress $!
-
-tar -xzf /tmp/kcptun.tar.gz -C /tmp 2>/dev/null
-if [ "$ARCH" = "amd64" ]; then
-    mv /tmp/server_linux_amd64 /usr/local/bin/dnstt-server 2>/dev/null
-else
-    mv /tmp/server_linux_arm64 /usr/local/bin/dnstt-server 2>/dev/null
-fi
-chmod +x /usr/local/bin/dnstt-server
-
-if [ -f /usr/local/bin/dnstt-server ]; then
-    echo -e "\r  ${GREEN}DNSTT binary downloaded successfully${NC}"
-else
-    echo -e "\r  ${RED}Download failed!${NC}"
-    exit 1
-fi
-print_step_end
-
-# ============================================
-# GENERATE KEYS
-# ============================================
-print_step "7 - GENERATING KEYS"
-print_info "Creating encryption keys..."
-
-echo -ne "  ${CYAN}Generating keys...${NC}"
-if [ ! -f /etc/dnstt/server.key ] || [ ! -f /etc/dnstt/server.pub ]; then
-    /usr/local/bin/dnstt-server --gen-key \
-        --privkey-file /etc/dnstt/server.key \
-        --pubkey-file /etc/dnstt/server.pub 2>/dev/null || {
-        openssl rand -base64 32 > /etc/dnstt/server.key
-        openssl rand -base64 32 > /etc/dnstt/server.pub
-    }
-    echo -e "\r  ${GREEN}Keys generated successfully${NC}"
-else
-    echo -e "\r  ${GREEN}Using existing keys${NC}"
-fi
-
-chmod 600 /etc/dnstt/server.key
-chmod 644 /etc/dnstt/server.pub
-
-PUBKEY=$(cat /etc/dnstt/server.pub | head -n1)
-print_success "Public key: ${WHITE}$PUBKEY${NC}"
-print_step_end
-
-# ============================================
-# SYSTEM CONFIGURATION
-# ============================================
-print_step "8 - SYSTEM CONFIGURATION"
-print_info "Configuring system..."
-
-# Configure systemd-resolved
-echo -ne "  ${CYAN}Configuring DNS resolver...${NC}"
-if [ -f /etc/systemd/resolved.conf ]; then
-    sed -i 's/^#DNSStubListener=.*/DNSStubListener=no/' /etc/systemd/resolved.conf 2>/dev/null || echo "DNSStubListener=no" >> /etc/systemd/resolved.conf
-    sed -i 's/^DNS=.*/DNS=8.8.8.8 8.8.4.4/' /etc/systemd/resolved.conf 2>/dev/null || echo "DNS=8.8.8.8 8.8.4.4" >> /etc/systemd/resolved.conf
-    systemctl restart systemd-resolved 2>/dev/null
-    ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
-fi
-echo -e "\r  ${GREEN}DNS resolver configured${NC}"
-
-# Configure firewall
-echo -ne "  ${CYAN}Configuring firewall...${NC}"
-ufw --force disable 2>/dev/null || true
-ufw allow 22/tcp > /dev/null 2>&1
-ufw allow $PUBLIC_PORT/udp > /dev/null 2>&1
-ufw allow $INTERNAL_PORT/udp > /dev/null 2>&1
-echo "y" | ufw enable 2>/dev/null || true
-echo -e "\r  ${GREEN}Firewall configured${NC}"
-print_step_end
-
-# ============================================
 # CREATE SERVICES
 # ============================================
 print_step "9 - CREATING SERVICES"
@@ -559,4 +475,5 @@ EOF
 echo -e "\n${YELLOW}⚠️ Config imehifadhiwa kwenye: ~/dnstt-config.txt${NC}"
 echo -e "${WHITE}Press Enter to continue...${NC}"
 read -r
+
 
