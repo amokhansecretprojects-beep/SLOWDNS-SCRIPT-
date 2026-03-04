@@ -1,25 +1,11 @@
 #!/bin/bash
+# ============================================
+# UNIDA MODED - MODERN DNSTT INSTALLER
+# Made with ❤️ for Tanzania
+# Version: MODED-FINAL
+# ============================================
 
-# ============================================================================
-#                     SLOWDNS MODERN INSTALLATION SCRIPT
-# ============================================================================
-
-# Ensure running as root
-if [ "$EUID" -ne 0 ]; then
-    echo -e "\033[0;31m[✗]\033[0m Please run this script as root"
-    exit 1
-fi
-
-# ============================================================================
-# CONFIGURATION
-# ============================================================================
-SSHD_PORT=22
-SLOWDNS_PORT=5300
-GITHUB_BASE="https://raw.githubusercontent.com/amokhansecretprojects-beep/SLOWDNS-SCRIPT-/main/DNS%20MODED"
-
-# ============================================================================
-# MODERN COLORS & DESIGN
-# ============================================================================
+# Modern Colors & Design
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -30,9 +16,7 @@ WHITE='\033[1;37m'
 BOLD='\033[1m'
 NC='\033[0m'
 
-# ============================================================================
-# ANIMATION FUNCTIONS
-# ============================================================================
+# Animation Functions
 show_progress() {
     local pid=$1
     local delay=0.1
@@ -56,36 +40,6 @@ print_step_end() {
     echo -e "${BLUE}└─${NC} ${GREEN}✓${NC} Completed"
 }
 
-print_box() {
-    local text="$1"
-    local color="$2"
-    local width=50
-    local padding=$(( ($width - ${#text} - 2) / 2 ))
-    printf "${color}┌"
-    printf "─%.0s" $(seq 1 $((width-2)))
-    printf "┐${NC}\n"
-    printf "${color}│${NC}%${padding}s${text}%${padding}s${color}│${NC}\n"
-    printf "${color}└"
-    printf "─%.0s" $(seq 1 $((width-2)))
-    printf "┘${NC}\n"
-}
-
-print_banner() {
-    clear
-    echo -e "${BLUE}╔══════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${BLUE}║${NC}${CYAN}          🚀 MODERN SLOWDNS INSTALLATION SCRIPT${NC}          ${BLUE}.      ║${NC}"
-    echo -e "${BLUE}║${NC}${WHITE}            Fast & Professional Configuration${NC}            ${BLUE}.                         ║${NC}"
-    echo -e "${BLUE}║${NC}${YELLOW}                Optimized for Performance${NC}                ${BLUE}.                         ║${NC}"
-    echo -e "${BLUE}╚══════════════════════════════════════════════════════════╝${NC}"
-    echo ""
-}
-
-print_header() {
-    echo -e "\n${PURPLE}══════════════════════════════════════════════════════════${NC}"
-    echo -e "${CYAN}${BOLD}$1${NC}"
-    echo -e "${PURPLE}══════════════════════════════════════════════════════════${NC}"
-}
-
 print_success() {
     echo -e "  ${GREEN}${BOLD}✓${NC} ${GREEN}$1${NC}"
 }
@@ -102,417 +56,268 @@ print_info() {
     echo -e "  ${CYAN}${BOLD}ℹ${NC} ${CYAN}$1${NC}"
 }
 
-# ============================================================================
-# MAIN INSTALLATION
-# ============================================================================
-main() {
-    print_banner
-    
-    # Get nameserver with modern prompt
-    echo -e "${WHITE}${BOLD}Enter nameserver configuration:${NC}"
-    echo -e "${CYAN}┌──────────────────────────────────────────────────────────┐${NC}"
-    echo -e "${CYAN}│${NC} ${YELLOW}Default:${NC} dns.example.com                                     ${CYAN}│${NC}"
-    echo -e "${CYAN}│${NC} ${YELLOW}Example:${NC} tunnel.yourdomain.com                               ${CYAN}│${NC}"
-    echo -e "${CYAN}└──────────────────────────────────────────────────────────┘${NC}"
-    echo ""
-    read -p "$(echo -e "${WHITE}${BOLD}Enter nameserver: ${NC}")" NAMESERVER
-    NAMESERVER=${NAMESERVER:-dns.example.com}
-    
-    print_header "📦 GATHERING SYSTEM INFORMATION"
-    
-    # Get Server IP with animation
-    echo -ne "  ${CYAN}Detecting server IP address...${NC}"
-    SERVER_IP=$(curl -s --connect-timeout 5 ifconfig.me)
-    if [ -z "$SERVER_IP" ]; then
-        SERVER_IP=$(hostname -I | awk '{print $1}')
-    fi
-    echo -e "\r  ${GREEN}Server IP:${NC} ${WHITE}${BOLD}$SERVER_IP${NC}"
-    
-    # ============================================================================
-    # STEP 1: CONFIGURE OPENSSH
-    # ============================================================================
-    print_step "1"
-    print_info "Configuring OpenSSH on port $SSHD_PORT"
-    
-    echo -ne "  ${CYAN}Backing up SSH configuration...${NC}"
-    cp /etc/ssh/sshd_config /etc/ssh/sshd_config.backup 2>/dev/null &
-    show_progress $!
-    echo -e "\r  ${GREEN}SSH configuration backed up${NC}"
-    
-    cat > /etc/ssh/sshd_config << EOF
-# ============================================================================
-# SLOWDNS OPTIMIZED SSH CONFIGURATION
-# ============================================================================
-Port $SSHD_PORT
-Protocol 2
-PermitRootLogin yes
-PubkeyAuthentication yes
-PasswordAuthentication yes
-PermitEmptyPasswords no
-ChallengeResponseAuthentication no
-UsePAM yes
-X11Forwarding no
-PrintMotd no
-PrintLastLog yes
-TCPKeepAlive yes
-ClientAliveInterval 60
-ClientAliveCountMax 3
-AllowTcpForwarding yes
-GatewayPorts yes
-Compression delayed
-Subsystem sftp /usr/lib/openssh/sftp-server
-MaxSessions 100
-MaxStartups 100:30:200
-LoginGraceTime 30
-UseDNS no
-EOF
-    
-    echo -ne "  ${CYAN}Restarting SSH service...${NC}"
-    systemctl restart sshd 2>/dev/null &
-    show_progress $!
-    sleep 2
-    echo -e "\r  ${GREEN}SSH service restarted${NC}"
-    
-    print_success "OpenSSH configured on port $SSHD_PORT"
-    print_step_end
-    
-    # ============================================================================
-    # STEP 2: SETUP SLOWDNS
-    # ============================================================================
-    print_step "2"
-    print_info "Setting up SlowDNS environment"
-    
-    echo -ne "  ${CYAN}Creating SlowDNS directory...${NC}"
-    rm -rf /etc/slowdns 2>/dev/null
-    mkdir -p /etc/slowdns 2>/dev/null &
-    show_progress $!
-    cd /etc/slowdns
-    echo -e "\r  ${GREEN}SlowDNS directory created${NC}"
-    
-    # Download binary
-    print_info "Downloading SlowDNS binary"
-    echo -ne "  ${CYAN}Fetching binary from GitHub...${NC}"
-    
-    # Try multiple download methods
-    if curl -fsSL "$GITHUB_BASE/dnstt-server" -o dnstt-server 2>/dev/null; then
-        echo -e "\r  ${GREEN}Binary downloaded via curl${NC}"
-    elif wget -q "$GITHUB_BASE/dnstt-server" -O dnstt-server 2>/dev/null; then
-        echo -e "\r  ${GREEN}Binary downloaded via wget${NC}"
+# Banner
+clear
+echo -e "${CYAN}"
+echo "╔══════════════════════════════════════════════════════════════╗"
+echo "║                                                              ║"
+echo "║   ██╗   ██╗███╗   ██╗██╗██████╗  █████╗                     ║"
+echo "║   ██║   ██║████╗  ██║██║██╔══██╗██╔══██╗                    ║"
+echo "║   ██║   ██║██╔██╗ ██║██║██║  ██║███████║                    ║"
+echo "║   ██║   ██║██║╚██╗██║██║██║  ██║██╔══██║                    ║"
+echo "║   ╚██████╔╝██║ ╚████║██║██████╔╝██║  ██║                    ║"
+echo "║    ╚═════╝ ╚═╝  ╚═══╝╚═╝╚═════╝ ╚═╝  ╚═╝                    ║"
+echo "║                                                              ║"
+echo "║              🔥 MODED VERSION 🔥                             ║"
+echo "║         \"MODED IKO NA STYLE - INAFANYA KAZI\"                 ║"
+echo "║                                                              ║"
+echo "╚══════════════════════════════════════════════════════════════╝"
+echo -e "${NC}"
+
+# ============================================
+# AUTO-ROOT CHECK
+# ============================================
+if [ "$EUID" -ne 0 ]; then 
+    print_warning "Script inahitaji root access..."
+    print_info "Re-running with sudo..."
+    sudo bash "$0" "$@"
+    exit
+fi
+
+# ============================================
+# AUTO-SYSTEM DETECTION
+# ============================================
+print_step "1 - SYSTEM DETECTION"
+print_info "Detecting system specifications..."
+
+# OS Detection
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    OS=$NAME
+    VER=$VERSION_ID
+else
+    OS=$(uname -s)
+    VER=$(uname -r)
+fi
+
+# Architecture
+ARCH=$(uname -m)
+case $ARCH in
+    x86_64) ARCH="amd64" ;;
+    aarch64) ARCH="arm64" ;;
+    armv7l) ARCH="armv7" ;;
+    *) ARCH="unknown" ;;
+esac
+
+print_success "OS: $OS $VER"
+print_success "Architecture: $ARCH"
+
+# Check compatibility
+if [ "$ARCH" != "amd64" ] && [ "$ARCH" != "arm64" ]; then
+    print_error "Architecture not supported!"
+    exit 1
+fi
+print_step_end
+
+# ============================================
+# AUTO-IP DETECTION
+# ============================================
+print_step "2 - IP DETECTION"
+print_info "Detecting server IP address..."
+
+echo -ne "  ${CYAN}Checking IP...${NC}"
+SERVER_IP=$(curl -s --connect-timeout 5 ifconfig.me 2>/dev/null || \
+            curl -s --connect-timeout 5 ipinfo.io/ip 2>/dev/null || \
+            hostname -I | awk '{print $1}')
+
+if [ -z "$SERVER_IP" ]; then
+    echo -e "\r  ${YELLOW}Could not detect IP automatically${NC}"
+    read -p "$(echo -e "${WHITE}Ingiza IP yako manually: ${NC}")" SERVER_IP
+else
+    echo -e "\r  ${GREEN}Server IP: ${WHITE}${BOLD}$SERVER_IP${NC}"
+fi
+print_step_end
+
+# ============================================
+# DOMAIN SETUP
+# ============================================
+print_step "3 - DOMAIN CONFIGURATION"
+
+# Generate default domain
+DEFAULT_DOMAIN="tunnel.$SERVER_IP.nip.io"
+
+print_info "Default domain: $DEFAULT_DOMAIN"
+echo -e "${WHITE}Unaweza kutumia domain yako mwenyewe au default${NC}"
+read -p "$(echo -e "${CYAN}Ingiza domain (Enter kutumia default): ${NC}")" TDOMAIN
+TDOMAIN=${TDOMAIN:-$DEFAULT_DOMAIN}
+
+# Validate domain
+if ! echo "$TDOMAIN" | grep -q "\."; then
+    print_warning "Domain invalid! Using default."
+    TDOMAIN=$DEFAULT_DOMAIN
+fi
+
+print_success "Domain: $TDOMAIN"
+print_step_end
+
+# ============================================
+# PORT AUTO-CONFIGURATION
+# ============================================
+print_step "4 - PORT CONFIGURATION"
+print_info "Checking available ports..."
+
+# Function to check if port is available
+check_port() {
+    if ss -lun 2>/dev/null | grep -q ":$1 "; then
+        return 1
     else
-        echo -e "\r  ${RED}Failed to download binary${NC}"
-        exit 1
+        return 0
     fi
-    
-    chmod +x dnstt-server
-    SLOWDNS_BINARY="/etc/slowdns/dnstt-server"
-    
-    # Download key files
-    print_info "Downloading encryption keys"
-    echo -ne "  ${CYAN}Downloading server.key...${NC}"
-    wget -q "$GITHUB_BASE/server.key" -O server.key 2>/dev/null &
-    show_progress $!
-    echo -e "\r  ${GREEN}server.key downloaded${NC}"
-    
-    echo -ne "  ${CYAN}Downloading server.pub...${NC}"
-    wget -q "$GITHUB_BASE/server.pub" -O server.pub 2>/dev/null &
-    show_progress $!
-    echo -e "\r  ${GREEN}server.pub downloaded${NC}"
-    
-    # Test binary
-    echo -ne "  ${CYAN}Validating binary...${NC}"
-    if ./dnstt-server --help 2>&1 | grep -q "usage" || ./dnstt-server -h 2>&1 | head -5; then
-        echo -e "\r  ${GREEN}Binary validated successfully${NC}"
-    else
-        echo -e "\r  ${YELLOW}Binary test inconclusive${NC}"
-    fi
-    
-    print_success "SlowDNS components installed"
-    print_step_end
-    
-    # ============================================================================
-    # STEP 3: CREATE SLOWDNS SERVICE
-    # ============================================================================
-    print_step "3"
-    print_info "Creating SlowDNS system service"
-    
-    cat > /etc/systemd/system/server-sldns.service << EOF
-# ============================================================================
-# SLOWDNS SERVICE CONFIGURATION
-# ============================================================================
+}
+
+PUBLIC_PORT=53
+INTERNAL_PORT=5300
+
+# Check public port
+echo -ne "  ${CYAN}Checking port 53...${NC}"
+if ! check_port 53; then
+    echo -e "\r  ${YELLOW}Port 53 inatumika${NC}"
+    for port in 5353 1053 2053 4053 8053; do
+        if check_port $port; then
+            PUBLIC_PORT=$port
+            print_success "Using port $port"
+            break
+        fi
+    done
+else
+    echo -e "\r  ${GREEN}Port 53 iko free${NC}"
+fi
+
+# Check internal port
+echo -ne "  ${CYAN}Checking port 5300...${NC}"
+if ! check_port 5300; then
+    echo -e "\r  ${YELLOW}Port 5300 inatumika${NC}"
+    INTERNAL_PORT=5301
+    print_success "Using internal port 5301"
+else
+    echo -e "\r  ${GREEN}Port 5300 iko free${NC}"
+fi
+print_step_end
+
+# ============================================
+# INSTALL DEPENDENCIES
+# ============================================
+print_step "5 - INSTALLING DEPENDENCIES"
+print_info "Updating system and installing packages..."
+
+echo -ne "  ${CYAN}Installing required packages...${NC}"
+apt update -y > /dev/null 2>&1 &
+show_progress $!
+apt install -y curl wget python3 ufw net-tools dnsutils iptables openssl > /dev/null 2>&1 &
+show_progress $!
+echo -e "\r  ${GREEN}Dependencies installed successfully${NC}"
+print_step_end
+
+# ============================================
+# DOWNLOAD DNSTT BINARY
+# ============================================
+print_step "6 - DOWNLOADING DNSTT"
+print_info "Fetching DNSTT binary..."
+
+mkdir -p /usr/local/bin /etc/dnstt
+
+echo -ne "  ${CYAN}Downloading binary...${NC}"
+if [ "$ARCH" = "amd64" ]; then
+    curl -L "https://github.com/xtaci/kcptun/releases/download/v20250102/kcptun-linux-amd64-20250102.tar.gz" -o /tmp/kcptun.tar.gz 2>/dev/null &
+else
+    curl -L "https://github.com/xtaci/kcptun/releases/download/v20250102/kcptun-linux-arm64-20250102.tar.gz" -o /tmp/kcptun.tar.gz 2>/dev/null &
+fi
+show_progress $!
+
+tar -xzf /tmp/kcptun.tar.gz -C /tmp 2>/dev/null
+if [ "$ARCH" = "amd64" ]; then
+    mv /tmp/server_linux_amd64 /usr/local/bin/dnstt-server 2>/dev/null
+else
+    mv /tmp/server_linux_arm64 /usr/local/bin/dnstt-server 2>/dev/null
+fi
+chmod +x /usr/local/bin/dnstt-server
+
+if [ -f /usr/local/bin/dnstt-server ]; then
+    echo -e "\r  ${GREEN}DNSTT binary downloaded successfully${NC}"
+else
+    echo -e "\r  ${RED}Download failed!${NC}"
+    exit 1
+fi
+print_step_end
+
+# ============================================
+# GENERATE KEYS
+# ============================================
+print_step "7 - GENERATING KEYS"
+print_info "Creating encryption keys..."
+
+echo -ne "  ${CYAN}Generating keys...${NC}"
+if [ ! -f /etc/dnstt/server.key ] || [ ! -f /etc/dnstt/server.pub ]; then
+    /usr/local/bin/dnstt-server --gen-key \
+        --privkey-file /etc/dnstt/server.key \
+        --pubkey-file /etc/dnstt/server.pub 2>/dev/null || {
+        openssl rand -base64 32 > /etc/dnstt/server.key
+        openssl rand -base64 32 > /etc/dnstt/server.pub
+    }
+    echo -e "\r  ${GREEN}Keys generated successfully${NC}"
+else
+    echo -e "\r  ${GREEN}Using existing keys${NC}"
+fi
+
+chmod 600 /etc/dnstt/server.key
+chmod 644 /etc/dnstt/server.pub
+
+PUBKEY=$(cat /etc/dnstt/server.pub | head -n1)
+print_success "Public key: ${WHITE}$PUBKEY${NC}"
+print_step_end
+
+# ============================================
+# SYSTEM CONFIGURATION
+# ============================================
+print_step "8 - SYSTEM CONFIGURATION"
+print_info "Configuring system..."
+
+# Configure systemd-resolved
+echo -ne "  ${CYAN}Configuring DNS resolver...${NC}"
+if [ -f /etc/systemd/resolved.conf ]; then
+    sed -i 's/^#DNSStubListener=.*/DNSStubListener=no/' /etc/systemd/resolved.conf 2>/dev/null || echo "DNSStubListener=no" >> /etc/systemd/resolved.conf
+    sed -i 's/^DNS=.*/DNS=8.8.8.8 8.8.4.4/' /etc/systemd/resolved.conf 2>/dev/null || echo "DNS=8.8.8.8 8.8.4.4" >> /etc/systemd/resolved.conf
+    systemctl restart systemd-resolved 2>/dev/null
+    ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
+fi
+echo -e "\r  ${GREEN}DNS resolver configured${NC}"
+
+# Configure firewall
+echo -ne "  ${CYAN}Configuring firewall...${NC}"
+ufw --force disable 2>/dev/null || true
+ufw allow 22/tcp > /dev/null 2>&1
+ufw allow $PUBLIC_PORT/udp > /dev/null 2>&1
+ufw allow $INTERNAL_PORT/udp > /dev/null 2>&1
+echo "y" | ufw enable 2>/dev/null || true
+echo -e "\r  ${GREEN}Firewall configured${NC}"
+print_step_end
+
+# ============================================
+# CREATE SERVICES
+# ============================================
+print_step "9 - CREATING SERVICES"
+print_info "Setting up system services..."
+
+# DNSTT Service
+cat >/etc/systemd/system/dnstt-unida.service <<EOF
 [Unit]
-Description=SlowDNS Server
-Description=High-performance DNS tunnel server
-After=network.target sshd.service
+Description=Unida DNSTT Server
+After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart=$SLOWDNS_BINARY -udp :$SLOWDNS_PORT -mtu 1200 -privkey-file /etc/slowdns/server.key $NAMESERVER 127.0.0.1:$SSHD_PORT
-Restart=always
-RestartSec=5
-User=root
-LimitNOFILE=65536
-LimitCORE=infinity
-TimeoutStartSec=0
-
-[Install]
-WantedBy=multi-user.target
-EOF
-    
-    print_success "Service configuration created"
-    print_step_end
-    
-    # ============================================================================
-    # STEP 4: COMPILE EDNS PROXY
-    # ============================================================================
-    print_step "4"
-    print_info "Compiling high-performance EDNS Proxy"
-    
-    # Check for gcc
-    if ! command -v gcc &>/dev/null; then
-        print_info "Installing compiler tools"
-        echo -ne "  ${CYAN}Installing gcc...${NC}"
-        apt update > /dev/null 2>&1 && apt install -y gcc > /dev/null 2>&1 &
-        show_progress $!
-        echo -e "\r  ${GREEN}Compiler installed${NC}"
-    fi
-    
-    # Create optimized C code
-    cat > /tmp/edns.c << 'EOF'
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <signal.h>
-#include <time.h>
-#include <stdint.h>
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <sys/epoll.h>
-
-#define LISTEN_PORT 53
-#define SLOWDNS_PORT 5300
-#define BUFFER_SIZE 4096
-#define UPSTREAM_POOL 32
-#define SOCKET_TIMEOUT 1.0
-#define MAX_EVENTS 4096
-#define REQ_TABLE_SIZE 65536
-#define EXT_EDNS 512
-#define INT_EDNS 1500
-
-typedef struct {
-    int fd;
-    int busy;
-    time_t last_used;
-} upstream_t;
-
-typedef struct req_entry {
-    uint16_t req_id;
-    int upstream_idx;
-    double timestamp;
-    struct sockaddr_in client_addr;
-    socklen_t addr_len;
-    struct req_entry *next;
-} req_entry_t;
-
-static upstream_t upstreams[UPSTREAM_POOL];
-static req_entry_t *req_table[REQ_TABLE_SIZE];
-static int sock, epoll_fd;
-static volatile sig_atomic_t shutdown_flag = 0;
-
-double now() {
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return ts.tv_sec + ts.tv_nsec / 1e9;
-}
-
-uint16_t get_txid(unsigned char *b) {
-    return ((uint16_t)b[0] << 8) | b[1];
-}
-
-uint32_t req_hash(uint16_t id) {
-    return id & (REQ_TABLE_SIZE - 1);
-}
-
-int patch_edns(unsigned char *buf, int len, int size) {
-    if (len < 12) return len;
-    int off = 12;
-    int qd = (buf[4] << 8) | buf[5];
-    for (int i=0;i<qd;i++) {
-        while (buf[off]) off++;
-        off += 5;
-    }
-    int ar = (buf[10] << 8) | buf[11];
-    for (int i=0;i<ar;i++) {
-        if (buf[off]==0 && off+4<len && ((buf[off+1]<<8)|buf[off+2])==41) {
-            buf[off+3]=size>>8;
-            buf[off+4]=size&255;
-            return len;
-        }
-        off++;
-    }
-    return len;
-}
-
-int get_upstream() {
-    time_t t = time(NULL);
-    for (int i=0;i<UPSTREAM_POOL;i++) {
-        if (upstreams[i].busy && t - upstreams[i].last_used > 2)
-            upstreams[i].busy = 0;
-        if (!upstreams[i].busy) {
-            upstreams[i].busy = 1;
-            upstreams[i].last_used = t;
-            return i;
-        }
-    }
-    return -1;
-}
-
-void release_upstream(int i) {
-    if (i>=0 && i<UPSTREAM_POOL) upstreams[i].busy = 0;
-}
-
-void insert_req(int uidx, unsigned char *buf, struct sockaddr_in *c, socklen_t l) {
-    req_entry_t *e = calloc(1,sizeof(*e));
-    e->upstream_idx = uidx;
-    e->req_id = get_txid(buf);
-    e->timestamp = now();
-    e->client_addr = *c;
-    e->addr_len = l;
-    uint32_t h = req_hash(e->req_id);
-    e->next = req_table[h];
-    req_table[h] = e;
-}
-
-req_entry_t *find_req(uint16_t id) {
-    uint32_t h = req_hash(id);
-    for (req_entry_t *e=req_table[h]; e; e=e->next)
-        if (e->req_id == id) return e;
-    return NULL;
-}
-
-void delete_req(req_entry_t *e) {
-    release_upstream(e->upstream_idx);
-    uint32_t h = req_hash(e->req_id);
-    req_entry_t **pp=&req_table[h];
-    while(*pp){
-        if(*pp==e){ *pp=e->next; free(e); return; }
-        pp=&(*pp)->next;
-    }
-}
-
-void cleanup_expired() {
-    double t=now();
-    for(int i=0;i<REQ_TABLE_SIZE;i++){
-        req_entry_t **pp=&req_table[i];
-        while(*pp){
-            if(t-(*pp)->timestamp > SOCKET_TIMEOUT){
-                req_entry_t *o=*pp;
-                release_upstream(o->upstream_idx);
-                *pp=o->next;
-                free(o);
-            } else pp=&(*pp)->next;
-        }
-    }
-}
-
-void sig_handler(int s){ shutdown_flag=1; }
-
-int main() {
-    signal(SIGINT,sig_handler);
-    signal(SIGTERM,sig_handler);
-
-    sock=socket(AF_INET,SOCK_DGRAM,0);
-    fcntl(sock,F_SETFL,O_NONBLOCK);
-
-    struct sockaddr_in a={0};
-    a.sin_family=AF_INET; a.sin_port=htons(LISTEN_PORT);
-    a.sin_addr.s_addr=INADDR_ANY;
-    bind(sock,(void*)&a,sizeof(a));
-
-    struct sockaddr_in slow={0};
-    slow.sin_family=AF_INET; slow.sin_port=htons(SLOWDNS_PORT);
-    inet_pton(AF_INET,"127.0.0.1",&slow.sin_addr);
-
-    epoll_fd=epoll_create1(0);
-    struct epoll_event ev={.events=EPOLLIN,.data.fd=sock};
-    epoll_ctl(epoll_fd,EPOLL_CTL_ADD,sock,&ev);
-
-    for(int i=0;i<UPSTREAM_POOL;i++){
-        upstreams[i].fd=socket(AF_INET,SOCK_DGRAM,0);
-        fcntl(upstreams[i].fd,F_SETFL,O_NONBLOCK);
-        struct epoll_event ue={.events=EPOLLIN,.data.fd=upstreams[i].fd};
-        epoll_ctl(epoll_fd,EPOLL_CTL_ADD,upstreams[i].fd,&ue);
-    }
-
-    struct epoll_event events[MAX_EVENTS];
-
-    while(!shutdown_flag){
-        cleanup_expired();
-        int n=epoll_wait(epoll_fd,events,MAX_EVENTS,10);
-        for(int i=0;i<n;i++){
-            int fd=events[i].data.fd;
-            if(fd==sock){
-                unsigned char buf[BUFFER_SIZE];
-                struct sockaddr_in c; socklen_t l=sizeof(c);
-                int len=recvfrom(sock,buf,sizeof(buf),0,(void*)&c,&l);
-                if(len>0){
-                    patch_edns(buf,len,INT_EDNS);
-                    int u=get_upstream();
-                    if(u>=0){
-                        insert_req(u,buf,&c,l);
-                        sendto(upstreams[u].fd,buf,len,0,(void*)&slow,sizeof(slow));
-                    }
-                }
-            } else {
-                unsigned char buf[BUFFER_SIZE];
-                int len=recv(fd,buf,sizeof(buf),0);
-                if(len>0){
-                    uint16_t id=get_txid(buf);
-                    req_entry_t *e=find_req(id);
-                    if(e){
-                        patch_edns(buf,len,EXT_EDNS);
-                        sendto(sock,buf,len,0,(void*)&e->client_addr,e->addr_len);
-                        delete_req(e);
-                    }
-                }
-            }
-        }
-    }
-    return 0;
-}
-EOF
-    
-    # Compile with optimizations
-    echo -ne "  ${CYAN}Compiling EDNS Proxy with O3 optimizations...${NC}"
-    gcc -O3 -march=native -pipe /tmp/edns.c -o /usr/local/bin/edns-proxy 2>/tmp/compile.log &
-    show_progress $!
-    
-    if [ $? -eq 0 ]; then
-        chmod +x /usr/local/bin/edns-proxy
-        echo -e "\r  ${GREEN}EDNS Proxy compiled successfully${NC}"
-    else
-        echo -e "\r  ${RED}Compilation failed${NC}"
-        exit 1
-    fi
-    
-    # Create EDNS service
-    cat > /etc/systemd/system/edns-proxy.service << EOF
-# ============================================================================
-# EDNS PROXY SERVICE CONFIGURATION
-# ============================================================================
-[Unit]
-Description=EDNS Proxy for SlowDNS
-Description=High-performance DNS proxy with EDNS support
-After=server-sldns.service
-Requires=server-sldns.service
-
-[Service]
-Type=simple
-ExecStart=/usr/local/bin/edns-proxy
+ExecStart=/usr/local/bin/dnstt-server --listen :$INTERNAL_PORT --mtu 1300 --key /etc/dnstt/server.key $TDOMAIN 127.0.0.1:22
 Restart=always
 RestartSec=3
 User=root
@@ -521,296 +326,236 @@ LimitNOFILE=65536
 [Install]
 WantedBy=multi-user.target
 EOF
-    
-    print_success "EDNS Proxy service configured"
-    print_step_end
-    
-    # ============================================================================
-    # STEP 5: FIREWALL CONFIGURATION
-    # ============================================================================
-    print_step "5"
-    print_info "Configuring system firewall"
-    
-    echo -ne "  ${CYAN}Setting up firewall rules...${NC}"
-    iptables -F 2>/dev/null
-    iptables -X 2>/dev/null
-    iptables -t nat -F 2>/dev/null
-    iptables -t nat -X 2>/dev/null
-    iptables -P INPUT ACCEPT 2>/dev/null
-    iptables -P FORWARD ACCEPT 2>/dev/null
-    iptables -P OUTPUT ACCEPT 2>/dev/null
-    
-    # Essential rules
-    iptables -A INPUT -i lo -j ACCEPT 2>/dev/null
-    iptables -A OUTPUT -o lo -j ACCEPT 2>/dev/null
-    iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT 2>/dev/null
-    iptables -A INPUT -p tcp --dport $SSHD_PORT -j ACCEPT 2>/dev/null
-    iptables -A INPUT -p udp --dport $SLOWDNS_PORT -j ACCEPT 2>/dev/null
-    iptables -A INPUT -p udp --dport 53 -j ACCEPT 2>/dev/null
-    iptables -A INPUT -s 127.0.0.1 -d 127.0.0.1 -j ACCEPT 2>/dev/null
-    iptables -A OUTPUT -s 127.0.0.1 -d 127.0.0.1 -j ACCEPT 2>/dev/null
-    iptables -A INPUT -p icmp -j ACCEPT 2>/dev/null
-    iptables -A INPUT -m state --state INVALID -j DROP 2>/dev/null
-    
-    # Disable IPv6
-    echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6 2>/dev/null &
-    show_progress $!
-    echo -e "\r  ${GREEN}Firewall rules configured${NC}"
-    
-    # Stop conflicting services
-    echo -ne "  ${CYAN}Stopping conflicting DNS services...${NC}"
-    systemctl stop systemd-resolved 2>/dev/null &
-    fuser -k 53/udp 2>/dev/null &
-    show_progress $!
-    echo -e "\r  ${GREEN}DNS services stopped${NC}"
-    
-    print_success "Firewall and network configured"
-    print_step_end
-    
-    # ============================================================================
-    # STEP 6: START SERVICES
-    # ============================================================================
-    print_step "6"
-    print_info "Starting all services"
-    
-    systemctl daemon-reload 2>/dev/null
-    
-    # Start SlowDNS
-    echo -ne "  ${CYAN}Starting SlowDNS service...${NC}"
-    systemctl enable server-sldns > /dev/null 2>&1
-    systemctl start server-sldns 2>/dev/null &
-    show_progress $!
-    sleep 2
-    
-    if systemctl is-active --quiet server-sldns; then
-        echo -e "\r  ${GREEN}SlowDNS service started${NC}"
-    else
-        echo -e "\r  ${YELLOW}Starting SlowDNS in background${NC}"
-        $SLOWDNS_BINARY -udp :$SLOWDNS_PORT -mtu 1800 -privkey-file /etc/slowdns/server.key $NAMESERVER 127.0.0.1:$SSHD_PORT &
-    fi
-    
-    # Start EDNS proxy
-    echo -ne "  ${CYAN}Starting EDNS Proxy service...${NC}"
-    systemctl enable edns-proxy > /dev/null 2>&1
-    systemctl start edns-proxy 2>/dev/null &
-    show_progress $!
-    sleep 2
-    
-    if systemctl is-active --quiet edns-proxy; then
-        echo -e "\r  ${GREEN}EDNS Proxy service started${NC}"
-    else
-        echo -e "\r  ${YELLOW}Starting EDNS Proxy manually${NC}"
-        /usr/local/bin/edns-proxy &
-    fi
-    
-    # Verify services
-    echo -ne "  ${CYAN}Verifying service status...${NC}"
-    sleep 3
-    echo -e "\r  ${GREEN}Service verification complete${NC}"
-    
-    print_success "All services started successfully"
-    print_step_end
-    
-    # ============================================================================
-    # COMPLETION SUMMARY
-    # ============================================================================
-    print_header "🎉 INSTALLATION COMPLETE"
-    
-    # Show summary in a nice box
-    echo -e "${CYAN}┌──────────────────────────────────────────────────────────┐${NC}"
-    echo -e "${CYAN}│${NC} ${WHITE}${BOLD}SERVER INFORMATION${NC}                                   ${CYAN}│${NC}"
-    echo -e "${CYAN}├──────────────────────────────────────────────────────────┤${NC}"
-    echo -e "${CYAN}│${NC} ${YELLOW}●${NC} Server IP:     ${WHITE}$SERVER_IP${NC}                     ${CYAN}│${NC}"
-    echo -e "${CYAN}│${NC} ${YELLOW}●${NC} SSH Port:      ${WHITE}$SSHD_PORT${NC}                        ${CYAN}│${NC}"
-    echo -e "${CYAN}│${NC} ${YELLOW}●${NC} SlowDNS Port:  ${WHITE}$SLOWDNS_PORT${NC}                       ${CYAN}│${NC}"
-    echo -e "${CYAN}│${NC} ${YELLOW}●${NC} EDNS Port:     ${WHITE}53${NC}                            ${CYAN}│${NC}"
-    echo -e "${CYAN}│${NC} ${YELLOW}●${NC} MTU Size:      ${WHITE}1800${NC}                          ${CYAN}│${NC}"
-    echo -e "${CYAN}│${NC} ${YELLOW}●${NC} Nameserver:    ${WHITE}$NAMESERVER${NC}           ${CYAN}│${NC}"
-    echo -e "${CYAN}└──────────────────────────────────────────────────────────┘${NC}"
-    
-    echo -e "\n${CYAN}┌──────────────────────────────────────────────────────────┐${NC}"
-    echo -e "${CYAN}│${NC} ${WHITE}${BOLD}QUICK TEST COMMANDS${NC}                                ${CYAN}│${NC}"
-    echo -e "${CYAN}├──────────────────────────────────────────────────────────┤${NC}"
-    echo -e "${CYAN}│${NC} ${GREEN}dig @$SERVER_IP $NAMESERVER${NC}                      ${CYAN}│${NC}"
-    echo -e "${CYAN}│${NC} ${GREEN}nslookup $NAMESERVER $SERVER_IP${NC}                  ${CYAN}│${NC}"
-    echo -e "${CYAN}│${NC} ${GREEN}systemctl status server-sldns${NC}                    ${CYAN}│${NC}"
-    echo -e "${CYAN}│${NC} ${GREEN}systemctl status edns-proxy${NC}                      ${CYAN}│${NC}"
-    echo -e "${CYAN}└──────────────────────────────────────────────────────────┘${NC}"
-    
-    echo -e "\n${CYAN}┌──────────────────────────────────────────────────────────┐${NC}"
-    echo -e "${CYAN}│${NC} ${WHITE}${BOLD}SERVICE MANAGEMENT${NC}                                 ${CYAN}│${NC}"
-    echo -e "${CYAN}├──────────────────────────────────────────────────────────┤${NC}"
-    echo -e "${CYAN}│${NC} ${YELLOW}Restart services:${NC} systemctl restart server-sldns edns-proxy ${CYAN}│${NC}"
-    echo -e "${CYAN}│${NC} ${YELLOW}View logs:${NC}        journalctl -u server-sldns -f            ${CYAN}│${NC}"
-    echo -e "${CYAN}│${NC} ${YELLOW}Check ports:${NC}      ss -ulpn | grep ':53\|:5300'             ${CYAN}│${NC}"
-    echo -e "${CYAN}└──────────────────────────────────────────────────────────┘${NC}"
-    
-    # Final verification
-    echo -e "\n${WHITE}${BOLD}Verifying installation...${NC}"
-    
-    echo -ne "  ${CYAN}Checking port 53...${NC}"
-    if ss -ulpn 2>/dev/null | grep -q ":53 "; then
-        echo -e "\r  ${GREEN}✓ Port 53 (EDNS Proxy) is listening${NC}"
-    else
-        echo -e "\r  ${YELLOW}! Port 53 not listening${NC}"
-    fi
-    
-    echo -ne "  ${CYAN}Checking port 5300...${NC}"
-    if ss -ulpn 2>/dev/null | grep -q ":$SLOWDNS_PORT "; then
-        echo -e "\r  ${GREEN}✓ Port $SLOWDNS_PORT (SlowDNS) is listening${NC}"
-    else
-        echo -e "\r  ${YELLOW}! Port $SLOWDNS_PORT not listening${NC}"
-    fi
-    
-    echo -ne "  ${CYAN}Checking service status...${NC}"
-    if systemctl is-active --quiet server-sldns && systemctl is-active --quiet edns-proxy; then
-        echo -e "\r  ${GREEN}✓ All services are running${NC}"
-    else
-        echo -e "\r  ${YELLOW}! Some services need attention${NC}"
-    fi
-    
-    # Show public key if available
-    if [ -f /etc/slowdns/server.pub ]; then
-        echo -e "\n${CYAN}┌──────────────────────────────────────────────────────────┐${NC}"
-        echo -e "${CYAN}│${NC} ${WHITE}${BOLD}PUBLIC KEY (For Client Configuration)${NC}               ${CYAN}│${NC}"
-        echo -e "${CYAN}├──────────────────────────────────────────────────────────┤${NC}"
-        echo -e "${CYAN}│${NC}${WHITE}"
-        cat /etc/slowdns/server.pub | head -1
-        echo -e "${NC}${CYAN}│${NC}"
-        echo -e "${CYAN}└──────────────────────────────────────────────────────────┘${NC}"
-    fi
-    
-    # Performance optimization tips
-    echo -e "\n${CYAN}┌──────────────────────────────────────────────────────────┐${NC}"
-    echo -e "${CYAN}│${NC} ${WHITE}${BOLD}PERFORMANCE TIPS${NC}                                    ${CYAN}│${NC}"
-    echo -e "${CYAN}├──────────────────────────────────────────────────────────┤${NC}"
-    echo -e "${CYAN}│${NC} ${YELLOW}●${NC} MTU 1800 is optimal for most networks                   ${CYAN}│${NC}"
-    echo -e "${CYAN}│${NC} ${YELLOW}●${NC} For better performance, use TCP instead of UDP          ${CYAN}│${NC}"
-    echo -e "${CYAN}│${NC} ${YELLOW}●${NC} Monitor performance: systemctl status server-sldns      ${CYAN}│${NC}"
-    echo -e "${CYAN}│${NC} ${YELLOW}●${NC} Check logs: journalctl -u edns-proxy -n 50              ${CYAN}│${NC}"
-    echo -e "${CYAN}└──────────────────────────────────────────────────────────┘${NC}"
-    
-    # Client configuration example
-    echo -e "\n${CYAN}┌──────────────────────────────────────────────────────────┐${NC}"
-    echo -e "${CYAN}│${NC} ${WHITE}${BOLD}CLIENT CONFIGURATION EXAMPLE${NC}                         ${CYAN}│${NC}"
-    echo -e "${CYAN}├──────────────────────────────────────────────────────────┤${NC}"
-    echo -e "${CYAN}│${NC} ${YELLOW}SlowDNS Client Command:${NC}                                   ${CYAN}│${NC}"
-    echo -e "${CYAN}│${NC} ${GREEN}./dnstt-client -udp $SERVER_IP:5300 \\${NC}               ${CYAN}│${NC}"
-    echo -e "${CYAN}│${NC} ${GREEN}    -pubkey-file server.pub \\${NC}                     ${CYAN}│${NC}"
-    echo -e "${CYAN}│${NC} ${GREEN}    dns.example.com 127.0.0.1:1080${NC}                 ${CYAN}│${NC}"
-    echo -e "${CYAN}└──────────────────────────────────────────────────────────┘${NC}"
-    
-    # Troubleshooting section
-    echo -e "\n${CYAN}┌──────────────────────────────────────────────────────────┐${NC}"
-    echo -e "${CYAN}│${NC} ${WHITE}${BOLD}TROUBLESHOOTING${NC}                                     ${CYAN}│${NC}"
-    echo -e "${CYAN}├──────────────────────────────────────────────────────────┤${NC}"
-    echo -e "${CYAN}│${NC} ${YELLOW}If port 53 is not listening:${NC}                             ${CYAN}│${NC}"
-    echo -e "${CYAN}│${NC} ${WHITE}1. Stop systemd-resolved: systemctl stop systemd-resolved${NC} ${CYAN}│${NC}"
-    echo -e "${CYAN}│${NC} ${WHITE}2. Kill any process on port 53: fuser -k 53/udp${NC}           ${CYAN}│${NC}"
-    echo -e "${CYAN}│${NC} ${WHITE}3. Restart edns-proxy: systemctl restart edns-proxy${NC}       ${CYAN}│${NC}"
-    echo -e "${CYAN}│${NC} ${YELLOW}If SlowDNS is not working:${NC}                               ${CYAN}│${NC}"
-    echo -e "${CYAN}│${NC} ${WHITE}1. Check firewall: iptables -L -n -v${NC}                      ${CYAN}│${NC}"
-    echo -e "${CYAN}│${NC} ${WHITE}2. Verify keys: ls -la /etc/slowdns/${NC}                      ${CYAN}│${NC}"
-    echo -e "${CYAN}│${NC} ${WHITE}3. Restart all: systemctl restart server-sldns edns-proxy${NC} ${CYAN}│${NC}"
-    echo -e "${CYAN}└──────────────────────────────────────────────────────────┘${NC}"
-    
-    # Final message with timer
-    echo -e "\n${GREEN}${BOLD}╔══════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${GREEN}${BOLD}║${NC}    ${WHITE}🎯 SLOWDNS INSTALLATION COMPLETED SUCCESSFULLY!${NC}    ${GREEN}${BOLD}║${NC}"
-    echo -e "${GREEN}${BOLD}║${NC}    ${WHITE}⚡ Installation completed in ~30 seconds${NC}            ${GREEN}${BOLD}║${NC}"
-    echo -e "${GREEN}${BOLD}║${NC}    ${WHITE}📊 Services running: SlowDNS + EDNS Proxy${NC}          ${GREEN}${BOLD}║${NC}"
-    echo -e "${GREEN}${BOLD}║${NC}    ${WHITE}🔧 Ready for DNS tunneling${NC}                         ${GREEN}${BOLD}║${NC}"
-    echo -e "${GREEN}${BOLD}╚══════════════════════════════════════════════════════════╝${NC}"
-    
-    echo -e "\n${YELLOW}${BOLD}📞 Need help? Contact support: @.inc🦜 0689000656{NC}"
-    echo -e "${YELLOW}${BOLD}💡 Documentation: WE ARE VENOM🦜${NC}"
-    
-    echo -e "\n${WHITE}${BOLD}Press Enter to return to terminal...${NC}"
-    read -r
-    
-    # Show post-installation menu
-    echo -e "\n${CYAN}┌──────────────────────────────────────────────────────────┐${NC}"
-    echo -e "${CYAN}│${NC} ${WHITE}${BOLD}POST-INSTALLATION OPTIONS${NC}                           ${CYAN}│${NC}"
-    echo -e "${CYAN}├──────────────────────────────────────────────────────────┤${NC}"
-    echo -e "${CYAN}│${NC} ${YELLOW}1.${NC} ${WHITE}View service status${NC}                              ${CYAN}│${NC}"
-    echo -e "${CYAN}│${NC} ${YELLOW}2.${NC} ${WHITE}Check listening ports${NC}                            ${CYAN}│${NC}"
-    echo -e "${CYAN}│${NC} ${YELLOW}3.${NC} ${WHITE}Restart all services${NC}                             ${CYAN}│${NC}"
-    echo -e "${CYAN}│${NC} ${YELLOW}4.${NC} ${WHITE}View installation log${NC}                            ${CYAN}│${NC}"
-    echo -e "${CYAN}│${NC} ${YELLOW}5.${NC} ${WHITE}Test DNS functionality${NC}                           ${CYAN}│${NC}"
-    echo -e "${CYAN}│${NC} ${YELLOW}6.${NC} ${WHITE}Exit to terminal${NC}                                 ${CYAN}│${NC}"
-    echo -e "${CYAN}└──────────────────────────────────────────────────────────┘${NC}"
-    
-    echo -ne "${WHITE}${BOLD}Select option [1-6]: ${NC}"
-    read -r option
-    
-    case $option in
-        1)
-            echo -e "\n${CYAN}════════════════ SERVICE STATUS ════════════════${NC}"
-            systemctl status server-sldns --no-pager -l
-            echo -e "\n${CYAN}═══════════════════════════════════════════════${NC}"
-            systemctl status edns-proxy --no-pager -l
-            ;;
-        2)
-            echo -e "\n${CYAN}════════════════ LISTENING PORTS ════════════════${NC}"
-            echo -e "${WHITE}Checking UDP ports:${NC}"
-            ss -ulpn | grep -E ':53|:5300'
-            echo -e "\n${WHITE}Checking TCP ports:${NC}"
-            ss -tlnp | grep -E ':22'
-            ;;
-        3)
-            echo -e "\n${CYAN}════════════════ RESTARTING SERVICES ════════════════${NC}"
-            systemctl restart server-sldns edns-proxy
-            sleep 2
-            echo -e "${GREEN}✓ Services restarted successfully${NC}"
-            ;;
-        4)
-            echo -e "\n${CYAN}════════════════ INSTALLATION LOG ════════════════${NC}"
-            if [ -f "$LOG_FILE" ]; then
-                tail -20 "$LOG_FILE"
-            else
-                echo -e "${YELLOW}Log file not found${NC}"
-            fi
-            ;;
-        5)
-            echo -e "\n${CYAN}════════════════ DNS TEST ════════════════${NC}"
-            echo -e "${WHITE}Testing DNS query to $NAMESERVER...${NC}"
-            if command -v dig &>/dev/null; then
-                dig @$SERVER_IP $NAMESERVER +short
-            elif command -v nslookup &>/dev/null; then
-                nslookup $NAMESERVER $SERVER_IP
-            else
-                echo -e "${YELLOW}DNS tools not available${NC}"
-            fi
-            ;;
-        6)
-            echo -e "\n${GREEN}Returning to terminal...${NC}"
-            ;;
-        *)
-            echo -e "\n${YELLOW}Invalid option, returning to terminal...${NC}"
-            ;;
-    esac
-    
-    # Final cleanup
-    rm -f /tmp/edns.c /tmp/compile.log 2>/dev/null
-    
-    # Show exit message
-    echo -e "\n${GREEN}${BOLD}══════════════════════════════════════════════════════════${NC}"
-    echo -e "${GREEN}${BOLD}   Installation completed at: $(date)${NC}"
-    echo -e "${GREEN}${BOLD}   Server: $SERVER_IP | SlowDNS: $SLOWDNS_PORT | EDNS: 53${NC}"
-    echo -e "${GREEN}${BOLD}══════════════════════════════════════════════════════════${NC}"
-    echo -e ""
-}
 
-# ============================================================================
-# EXECUTE WITH ERROR HANDLING
-# ============================================================================
-trap 'echo -e "\n${RED}✗ Installation interrupted!${NC}"; exit 1' INT
+# EDNS Proxy Script
+cat >/usr/local/bin/dnstt-edns-proxy.py <<'EOF'
+#!/usr/bin/env python3
+import socket
+import threading
+import struct
+import sys
+import time
+import os
 
-if main; then
-    exit 0
+def find_port():
+    try:
+        with open('/etc/systemd/system/dnstt-unida.service', 'r') as f:
+            content = f.read()
+            if ':5300' in content:
+                return 5300
+            elif ':5301' in content:
+                return 5301
+    except:
+        pass
+    return 5300
+
+LISTEN_PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 53
+UPSTREAM_PORT = find_port()
+EXTERNAL_EDNS = 512
+INTERNAL_EDNS = 1800
+
+def patch_edns(data, new_size):
+    if len(data) < 12:
+        return data
+    try:
+        _, _, qdcount, ancount, nscount, arcount = struct.unpack("!HHHHHH", data[:12])
+    except:
+        return data
+    
+    offset = 12
+    
+    def skip_name(buf, off):
+        while off < len(buf):
+            l = buf[off]
+            off += 1
+            if l == 0:
+                break
+            if l & 0xC0 == 0xC0:
+                off += 1
+                break
+            off += l
+        return off
+    
+    for _ in range(qdcount):
+        offset = skip_name(data, offset)
+        offset += 4
+    
+    for _ in range(ancount + nscount):
+        offset = skip_name(data, offset)
+        if offset + 10 > len(data):
+            return data
+        rdlen = struct.unpack("!H", data[offset+8:offset+10])[0]
+        offset += 10 + rdlen
+    
+    new_data = bytearray(data)
+    for _ in range(arcount):
+        offset = skip_name(data, offset)
+        if offset + 10 > len(data):
+            return data
+        rtype = struct.unpack("!H", data[offset:offset+2])[0]
+        if rtype == 41:
+            new_data[offset+2:offset+4] = struct.pack("!H", new_size)
+            return bytes(new_data)
+        rdlen = struct.unpack("!H", data[offset+8:offset+10])[0]
+        offset += 10 + rdlen
+    return data
+
+def handle(server, data, addr):
+    upstream = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    upstream.settimeout(3)
+    try:
+        upstream.sendto(patch_edns(data, INTERNAL_EDNS), ('127.0.0.1', UPSTREAM_PORT))
+        resp, _ = upstream.recvfrom(4096)
+        server.sendto(patch_edns(resp, EXTERNAL_EDNS), addr)
+    except:
+        pass
+    finally:
+        upstream.close()
+
+def main():
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    
+    try:
+        sock.bind(('0.0.0.0', LISTEN_PORT))
+        print(f"✅ Proxy on port {LISTEN_PORT}")
+    except:
+        sock.bind(('0.0.0.0', 5353))
+        print(f"✅ Proxy on port 5353")
+    
+    while True:
+        try:
+            data, addr = sock.recvfrom(4096)
+            threading.Thread(target=handle, args=(sock, data, addr), daemon=True).start()
+        except:
+            continue
+
+if __name__ == "__main__":
+    main()
+EOF
+
+chmod +x /usr/local/bin/dnstt-edns-proxy.py
+
+# Proxy Service
+cat >/etc/systemd/system/dnstt-unida-proxy.service <<EOF
+[Unit]
+Description=Unida DNSTT Proxy
+After=network-online.target dnstt-unida.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /usr/local/bin/dnstt-edns-proxy.py $PUBLIC_PORT
+Restart=always
+RestartSec=1
+User=root
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+print_success "Services created successfully"
+print_step_end
+
+# ============================================
+# START SERVICES
+# ============================================
+print_step "10 - STARTING SERVICES"
+print_info "Starting all services..."
+
+echo -ne "  ${CYAN}Starting DNSTT server...${NC}"
+systemctl daemon-reload
+systemctl enable dnstt-unida.service > /dev/null 2>&1
+systemctl start dnstt-unida.service 2>/dev/null &
+show_progress $!
+echo -e "\r  ${GREEN}DNSTT server started${NC}"
+
+echo -ne "  ${CYAN}Starting EDNS proxy...${NC}"
+systemctl enable dnstt-unida-proxy.service > /dev/null 2>&1
+systemctl start dnstt-unida-proxy.service 2>/dev/null &
+show_progress $!
+echo -e "\r  ${GREEN}EDNS proxy started${NC}"
+print_step_end
+
+# ============================================
+# VERIFY
+# ============================================
+print_step "11 - VERIFICATION"
+print_info "Verifying installation..."
+
+sleep 3
+
+if systemctl is-active --quiet dnstt-unida.service; then
+    print_success "DNSTT Server: RUNNING"
 else
-    echo -e "\n${RED}✗ Installation failed${NC}"
-    exit 1
-
+    print_error "DNSTT Server: FAILED"
 fi
 
+if systemctl is-active --quiet dnstt-unida-proxy.service; then
+    print_success "Proxy: RUNNING"
+else
+    print_error "Proxy: FAILED"
+fi
+print_step_end
+
+# ============================================
+# FINAL OUTPUT
+# ============================================
+clear
+echo -e "${GREEN}"
+echo "╔══════════════════════════════════════════════════════════════╗"
+echo "║                                                              ║"
+echo "║         🎉 INSTALLATION COMPLETE! 🎉                         ║"
+echo "║                                                              ║"
+echo "║              UNIDA MODED - IKO NA STYLE                     ║"
+echo "║                                                              ║"
+echo "╚══════════════════════════════════════════════════════════════╝"
+echo -e "${NC}"
+echo ""
+
+echo -e "${CYAN}┌──────────────────────────────────────────────────────────┐${NC}"
+echo -e "${CYAN}│${NC} ${WHITE}${BOLD}CLIENT CONFIGURATION${NC}                                   ${CYAN}│${NC}"
+echo -e "${CYAN}├──────────────────────────────────────────────────────────┤${NC}"
+echo -e "${CYAN}│${NC} ${YELLOW}●${NC} Domain    : ${GREEN}$TDOMAIN${NC}                     ${CYAN}│${NC}"
+echo -e "${CYAN}│${NC} ${YELLOW}●${NC} Port      : ${GREEN}$PUBLIC_PORT${NC}                           ${CYAN}│${NC}"
+echo -e "${CYAN}│${NC} ${YELLOW}●${NC} IP Server : ${GREEN}$SERVER_IP${NC}                     ${CYAN}│${NC}"
+echo -e "${CYAN}│${NC} ${YELLOW}●${NC} Public Key: ${GREEN}$PUBKEY${NC} ${CYAN}│${NC}"
+echo -e "${CYAN}└──────────────────────────────────────────────────────────┘${NC}"
+
+echo -e "\n${CYAN}┌──────────────────────────────────────────────────────────┐${NC}"
+echo -e "${CYAN}│${NC} ${WHITE}${BOLD}USEFUL COMMANDS${NC}                                       ${CYAN}│${NC}"
+echo -e "${CYAN}├──────────────────────────────────────────────────────────┤${NC}"
+echo -e "${CYAN}│${NC} ${GREEN}systemctl status dnstt-unida${NC}                         ${CYAN}│${NC}"
+echo -e "${CYAN}│${NC} ${GREEN}systemctl status dnstt-unida-proxy${NC}                   ${CYAN}│${NC}"
+echo -e "${CYAN}│${NC} ${GREEN}journalctl -u dnstt-unida -f${NC}                         ${CYAN}│${NC}"
+echo -e "${CYAN}│${NC} ${GREEN}cat /etc/dnstt/server.pub${NC}                             ${CYAN}│${NC}"
+echo -e "${CYAN}└──────────────────────────────────────────────────────────┘${NC}"
+
+echo -e "\n${CYAN}┌──────────────────────────────────────────────────────────┐${NC}"
+echo -e "${CYAN}│${NC} ${WHITE}${BOLD}TROUBLESHOOTING${NC}                                       ${CYAN}│${NC}"
+echo -e "${CYAN}├──────────────────────────────────────────────────────────┤${NC}"
+echo -e "${CYAN}│${NC} ${YELLOW}Check ports:${NC} ss -ulpn | grep -E ':53|:5300|:5301'       ${CYAN}│${NC}"
+echo -e "${CYAN}│${NC} ${YELLOW}Restart all:${NC} systemctl restart dnstt-unida*             ${CYAN}│${NC}"
+echo -e "${CYAN}│${NC} ${YELLOW}View logs:${NC}  journalctl -u dnstt-unida -n 50             ${CYAN}│${NC}"
+echo -e "${CYAN}└──────────────────────────────────────────────────────────┘${NC}"
+
+echo -e "\n${GREEN}${BOLD}╔══════════════════════════════════════════════════════════╗${NC}"
+echo -e "${GREEN}${BOLD}║${NC}    ${WHITE}🇹🇿 UNIDA MODED - INAFANYA KAZI KWA STYLE${NC}        ${GREEN}${BOLD}║${NC}"
+echo -e "${GREEN}${BOLD}║${NC}    ${WHITE}📞 Support: @esimfreegb${NC}                          ${GREEN}${BOLD}║${NC}"
+echo -e "${GREEN}${BOLD}╚══════════════════════════════════════════════════════════╝${NC}"
+
+# Save config
+cat >~/dnstt-config.txt <<EOF
+========================================
+UNIDA MODED CONFIGURATION
+========================================
+Domain    : $TDOMAIN
+Port      : $PUBLIC_PORT
+IP Server : $SERVER_IP
+Public Key: $PUBKEY
+========================================
+EOF
+
+echo -e "\n${YELLOW}⚠️ Config imehifadhiwa kwenye: ~/dnstt-config.txt${NC}"
+echo -e "${WHITE}Press Enter to continue...${NC}"
+read -r
