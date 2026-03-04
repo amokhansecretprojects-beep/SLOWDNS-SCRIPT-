@@ -15,7 +15,7 @@ fi
 # ============================================================================
 SSHD_PORT=22
 SLOWDNS_PORT=5300
-GITHUB_BASE="https://raw.githubusercontent.com/amokhansecretprojects-beep/SLOWDNS-SCRIPT-/main/DNS%20MODED"
+GITHUB_BASE="https://raw.githubusercontent.com/amokhansecretprojects-beep/DNSTT-MODED/main/DNS%20MODED"
 
 # ============================================================================
 # MODERN COLORS & DESIGN
@@ -813,3 +813,4 @@ else
     exit 1
 
 fi
+
